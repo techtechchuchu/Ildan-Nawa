@@ -8,7 +8,7 @@ export function convertFeatures(features:Feature[],center:{lat:number;lng:number
  for(const f of features){const t=f.properties;const coords=f.geometry?.coordinates;if(!t?.name?.trim()||!t.osm_id||!coords||coords.length<2)continue;const [lng,lat]=coords;if(!Number.isFinite(lat)||!Number.isFinite(lng)||distance(center,{lat,lng})>3000)continue;if(t.countrycode&&t.countrycode.toLowerCase()!=='kr')continue;
  const kind=t.osm_type==='N'?'node':t.osm_type==='W'?'way':t.osm_type==='R'?'relation':undefined;if(!kind)continue;
  const category=t.osm_value==='cafe'?'카페':['restaurant','fast_food'].includes(t.osm_value||'')?'식사':t.osm_value==='park'?'산책':['museum','gallery','cinema'].includes(t.osm_value||'')?'문화':['bowling_alley','amusement_arcade'].includes(t.osm_value||'')?'놀거리':undefined;if(!category)continue;
- const id=`${kind}/${t.osm_id}`;found.set(id,{id,name:t.name.trim(),lat,lng,category,...categories[category],indoor:category!=='산책',address:[t.city,t.street,t.housenumber].filter(Boolean).join(' '),url:`https://www.openstreetmap.org/${id}`});
+ const id=`${kind}/${t.osm_id}`;found.set(id,{id,name:t.name.trim(),lat,lng,category,...categories[category],indoor:category!=='산책',address:[t.city,t.street,t.housenumber].filter(Boolean).join(' '),source:'osm',priceBasis:'category_estimate',url:`https://www.openstreetmap.org/${id}`});
  }
  const counts:Record<string,number>={};return [...found.values()].sort((a,b)=>distance(center,a)-distance(center,b)).filter(p=>{counts[p.category]=(counts[p.category]||0)+1;return counts[p.category]<=8;});
 }

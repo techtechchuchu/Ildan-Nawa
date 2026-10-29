@@ -35,6 +35,7 @@ GPT 설정: 로컬 `.env.local`에 아래 값을 넣거나, 배포 환경의 비
 OPENAI_API_KEY=발급받은_키
 OPENAI_MODEL=gpt-4.1-mini
 PHOTON_URL=https://photon.komoot.io/api/
+KAKAO_REST_API_KEY=
 ```
 
 키는 전달된 소스에 포함되어 있지 않습니다. Vercel 프로젝트 Settings → Environment Variables에서 OPENAI_API_KEY를 Secret으로 등록하고 재배포하면 활성화됩니다. 플러그인은 필요하지 않습니다.
@@ -67,3 +68,8 @@ node --experimental-strip-types scripts/preview-server.mjs
 - OpenAI 구조화 출력: https://developers.openai.com/api/docs/guides/structured-outputs
 
 공개 OSM 타일은 화면에 필요한 범위만 요청합니다. 대량 다운로드·오프라인 프리패치는 구현하지 않았습니다. 지역 검색은 검색 버튼을 눌렀을 때만 요청합니다. 상용 확장 시 검색·타일 공급자와 사용량을 재검토하세요.
+
+## 카카오 장소 검색과 정보의 정확도
+Production 환경변수 KAKAO_REST_API_KEY를 등록하고 카카오디벨로퍼스에서 카카오맵 사용을 활성화하면 장소 검색에 카카오 Local API를 우선 사용합니다. 지도는 OpenStreetMap을 유지합니다. 등록된 값은 서버에서만 사용합니다.
+공식 장소 검색 API는 상호·주소·전화·업종·상세페이지를 제공합니다. 별점, 후기 수, 리뷰 본문, 실제 메뉴 가격은 제공하지 않으므로 현재 별점·후기 수 정렬은 구현되지 않았습니다. 외부 링크는 사용자의 확인을 위한 검색·상세페이지 링크이며, 앱이 후기 내용을 수집·분석했다는 의미가 아닙니다.
+표시 금액은 업종별 계획 기준이며 실제 가격으로 검증된 금액이 아닙니다. 이를 화면과 GPT 지시에 명시합니다. 별점·후기순 정렬에는 별도로 이용 가능한 신뢰할 수 있는 평점·후기 데이터가 필요합니다.

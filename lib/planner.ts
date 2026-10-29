@@ -1,4 +1,4 @@
-export type Place = { id: string; name: string; lat: number; lng: number; category: string; cost: number; duration: number; url: string; address?: string; cuisine?: string; indoor: boolean };
+export type Place = { id: string; name: string; lat: number; lng: number; category: string; cost: number; duration: number; url: string; address?: string; cuisine?: string; indoor: boolean; source?: 'kakao'|'osm'|'sample'; sourceCategory?: string; phone?: string; priceBasis?: 'category_estimate' };
 export type Preferences = { region: string; lat: number; lng: number; companion: string; people: number; start: string; end: string; budget: number; transport: string; activities: string[]; food: string; indoor: boolean; request: string; excluded?: string[] };
 export type Stop = Place & { arrival: string; departure: string; travel: number; reason: string };
 export type Course = { id: string; title: string; subtitle: string; stops: Stop[]; total: number; minutes: number; preferences?: Preferences };
