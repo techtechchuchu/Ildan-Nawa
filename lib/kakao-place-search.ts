@@ -5,7 +5,7 @@ const inflight=new Map<string,Promise<Place[]>>();
 type Search={category:string;group?:string;query?:string};
 export function convertKakaoDocument(d:KakaoDocument,category:string,center:{lat:number;lng:number}):Place|null{
  const lat=Number(d.y),lng=Number(d.x);if(!/^\d+$/.test(d.id)||!d.place_name?.trim()||!Number.isFinite(lat)||!Number.isFinite(lng)||distance(center,{lat,lng})>3000||!categories[category])return null;
- if(category==='식사'&&d.category_group_code!=='FD6')return null;
+ if(category==='식사'&&(d.category_group_code!=='FD6'||/아이스크림|식품판매|식료품|편의점/.test(d.category_name)))return null;
  if(category==='카페'&&d.category_group_code!=='CE7')return null;
  if(category==='산책'&&!/공원|산책|둘레길|수목원/.test(d.category_name))return null;
  if(category==='놀거리'&&!/볼링|방탈출|보드게임|오락|체험/.test(d.category_name))return null;
