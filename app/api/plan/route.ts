@@ -17,7 +17,7 @@ export async function POST(req:Request){
  const placeSource=demo?'sample':kakaoKey()?'kakao':'osm';
  const candidates=demo?samplePlaces():placeSource==='kakao'?await searchKakaoPlaces(prefs,kakaoKey()!):await searchPlaces(prefs);
 // 이름이나 업종에 명시된 단서만 사용할 수 있으며, 영업 형태와 실제 가격은 확인되지 않았다.
-const chainCafe=/스타벅스|컴포즈|메가커피|메가엠지씨|빽다방|이디야|투썸플레이스|할리스|더벤티|매머드|매머드커피|요거프레소|커피빈|엔제리너스|폴바셋|파스쿠찌|커피베이/i;
+const chainCafe=/스타벅스|컴포즈|메가커피|메가MGC|메가엠지씨|빽다방|이디야|투썸플레이스|할리스|더벤티|매머드|매머드커피|요거프레소|커피빈|엔제리너스|폴바셋|파스쿠찌|커피베이/i;
 const wantsChain=/프랜차이즈|프차|스타벅스|컴포즈|이디야|메가커피|빽다방/.test(prefs.request);
 const independentCafes=candidates.filter(place=>place.category==='카페'&&!chainCafe.test(place.name+' '+(place.sourceCategory||'')));
 const places=candidates.map(place=>{
@@ -46,4 +46,5 @@ const places=candidates.map(place=>{
  return Response.json({courses,preferences:prefs,mode,notice,placeSource,availableCategories:[...new Set(places.map(p=>p.category))]});
  }catch(error){return Response.json({error:error instanceof Error?error.message:'코스를 만들지 못했어요. 다시 시도해 주세요.'},{status:503});}
 }
+
 
