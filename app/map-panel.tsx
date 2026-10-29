@@ -1,0 +1,9 @@
+'use client';
+import {useEffect,useRef,useState} from 'react';
+import type {Course} from '../lib/planner';
+import 'leaflet/dist/leaflet.css';
+export default function MapPanel({lat,lng,course}:{lat:number;lng:number;course?:Course}){
+const ref=useRef<HTMLDivElement>(null);const [failed,setFailed]=useState(false);
+useEffect(()=>{let map:import('leaflet').Map|undefined;let cancelled=false;setFailed(false);import('leaflet').then(L=>{if(cancelled||!ref.current)return;map=L.map(ref.current,{scrollWheelZoom:false}).setView([lat,lng],15);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',maxZoom:19}).on('tileerror',()=>setFailed(true)).addTo(map);const stops=course?.stops;if(stops?.length){const coords=stops.map(s=>[s.lat,s.lng] as [number,number]);L.polyline(coords,{color:'#9856e8',weight:4,dashArray:'7 9',opacity:.8}).addTo(map);stops.forEach((s,i)=>{const marker=L.marker([s.lat,s.lng],{icon:L.divIcon({className:'number-marker',html:`<span>${i+1}</span>`,iconSize:[32,38],iconAnchor:[16,35]})}).addTo(map!);const label=document.createElement('div');label.textContent=s.name;marker.bindPopup(label);});map.fitBounds(L.latLngBounds(coords),{padding:[45,45],maxZoom:16});}else{L.marker([lat,lng],{icon:L.divIcon({className:'center-marker',html:'<span></span>',iconSize:[24,24]})}).addTo(map);}setTimeout(()=>map?.invalidateSize(),150);}).catch(()=>setFailed(true));return()=>{cancelled=true;map?.remove();};},[lat,lng,course]);
+return <div className="map-container"><div ref={ref} className="leaflet-host" aria-label="OpenStreetMap 지도"/>{failed&&<a className="map-fallback" href={`https://www.openstreetmap.org/#map=15/${lat}/${lng}`} target="_blank" rel="noreferrer">지도 연결 지연 · 새 창에서 보기 ↗</a>}</div>;
+}

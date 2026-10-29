@@ -1,0 +1,20 @@
+export type Place = { id: string; name: string; lat: number; lng: number; category: string; cost: number; duration: number; url: string; address?: string; cuisine?: string; indoor: boolean };
+export type Preferences = { region: string; lat: number; lng: number; companion: string; people: number; start: string; end: string; budget: number; transport: string; activities: string[]; food: string; indoor: boolean; request: string; excluded?: string[] };
+export type Stop = Place & { arrival: string; departure: string; travel: number; reason: string };
+export type Course = { id: string; title: string; subtitle: string; stops: Stop[]; total: number; minutes: number; preferences?: Preferences };
+export const categories: Record<string, { cost: number; duration: number }> = { '식사': {cost:14000,duration:60}, '카페': {cost:6500,duration:45}, '산책': {cost:0,duration:40}, '문화': {cost:10000,duration:60}, '놀거리': {cost:15000,duration:60} };
+export function distance(a: {lat:number;lng:number},b:{lat:number;lng:number}) {const r=Math.PI/180;const h=Math.sin((b.lat-a.lat)*r/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin((b.lng-a.lng)*r/2)**2;return 6371000*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));}
+export function travel(a:{lat:number;lng:number},b:{lat:number;lng:number},mode:string){return Math.ceil(distance(a,b)*1.4/(mode==='도보'?75:mode==='자동차'?400:220))+(mode==='도보'?0:5);}
+export function minutes(t:string){const [h,m]=t.split(':').map(Number);return h*60+m;}
+export function time(n:number){return `${String(Math.floor(n/60)%24).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;}
+export function schedule(places:Place[],prefs:Preferences,title:string,subtitle:string,id:string):Course {
+ let now=minutes(prefs.start), deadline=minutes(prefs.end); if(deadline<=now)deadline+=1440;
+ const begin=now;let last={lat:prefs.lat,lng:prefs.lng},total=0;const stops:Stop[]=[];const used=new Set<string>();
+ for(const p of places){if(used.has(p.id)||prefs.excluded?.includes(p.category)||(prefs.activities.length>0&&!prefs.activities.includes(p.category))|| (prefs.indoor&&!p.indoor))continue;const walk=travel(last,p,prefs.transport);if(now+walk+p.duration>deadline||total+p.cost>prefs.budget)continue;now+=walk;stops.push({...p,arrival:time(now),departure:time(now+p.duration),travel:walk,reason:`${p.category} 시간을 넣어 여유 있게 즐겨요.`});now+=p.duration;total+=p.cost;last=p;used.add(p.id);}
+ return {id,title,subtitle,stops,total,minutes:now-begin,preferences:prefs};
+}
+export function propose(places:Place[],prefs:Preferences):Course[]{
+ const themes=[{title:'맛있는 하루',subtitle:'밥부터 커피까지, 취향을 채우는 시간',order:['식사','카페','산책','문화','놀거리']},{title:'조금 색다르게',subtitle:'평소와 다른 경험이 필요한 날',order:['놀거리','문화','식사','카페','산책']},{title:'느긋한 나들이',subtitle:'커피 한 잔과 천천히 걷는 오후',order:['카페','산책','식사','문화','놀거리']}];
+ return themes.map((theme,index)=>{let last={lat:prefs.lat,lng:prefs.lng};const selected:Place[]=[];const order=prefs.activities.length?prefs.activities:theme.order.slice(0,3);for(const cat of order){const pool=places.filter(p=>p.category===cat&&(!prefs.indoor||p.indoor)).sort((a,b)=>distance(last,a)-distance(last,b));if(pool.length){const p=pool[Math.min(index,pool.length-1)];selected.push(p);last=p;}}return schedule(selected,prefs,theme.title,theme.subtitle,`course-${index}`);}).filter(c=>c.stops.length>0);
+}
+export function samplePlaces():Place[]{return Array.from({length:15},(_,i)=>{const category=Object.keys(categories)[Math.floor(i/3)];const d=categories[category];return{id:`sample-${i}`,name:`${['한식 식당','브런치 식당','작은 식당','디저트 카페','로스터리 카페','동네 카페','강변 산책','공원 산책','골목 산책','작은 전시','문화 공간','갤러리','보드게임','볼링','체험 공방'][i]} 예시`,lat:35.539+Math.sin(i*2)*.004,lng:129.334+Math.cos(i*2)*.004,category,...d,indoor:category!=='산책',url:'https://www.openstreetmap.org/#map=16/35.539/129.334'};});}
