@@ -43,7 +43,7 @@ const places=candidates.map(place=>{
   const shortlist=Object.keys(categories).flatMap(category=>places.filter(place=>place.category===category&&place.address).slice(0,2)).slice(0,8);
   const results=await Promise.allSettled(shortlist.map(async place=>{
    const params=new URLSearchParams({query:`${place.name} ${prefs.region} 후기`,display:'3',sort:'sim'});
-   const res=await fetch(`https://openapi.naver.com/v1/search/blog.json?${params}`,{headers:{'X-Naver-Client-Id':naverId,'X-Naver-Client-Secret':naverSecret},signal:AbortSignal.timeout(9000),cache:'no-store'});
+   const res=await fetch(`https://naverapihub.apigw.ntruss.com/search/v1/blog?${params}`,{headers:{'X-NCP-APIGW-API-KEY-ID':naverId,'X-NCP-APIGW-API-KEY':naverSecret},signal:AbortSignal.timeout(9000),cache:'no-store'});
    if(!res.ok)throw new Error('네이버 블로그 검색 실패');
    const json=await res.json() as {items?:{title?:string;description?:string;link?:string}[]};
    return {place,items:(json.items||[]).flatMap(item=>{try{const url=new URL(item.link||'');if(url.protocol!=='https:'||url.hostname!=='blog.naver.com')return [];const clean=(v:string)=>v.replace(/<[^>]*>/g,'').slice(0,500);return [{title:clean(item.title||'블로그 후기'),description:clean(item.description||''),url:url.href}];}catch{return [];}})};
@@ -78,4 +78,5 @@ const places=candidates.map(place=>{
  return Response.json({courses,preferences:prefs,mode,notice,placeSource,reviewSources,reviewSearchStatus,popupSources,popupSearchStatus,availableCategories:[...new Set(places.map(p=>p.category))]});
  }catch(error){return Response.json({error:error instanceof Error?error.message:'코스를 만들지 못했어요. 다시 시도해 주세요.'},{status:503});}
 }
+
 
