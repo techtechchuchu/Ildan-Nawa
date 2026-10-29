@@ -10,7 +10,7 @@ export function time(n:number){return `${String(Math.floor(n/60)%24).padStart(2,
 export function schedule(places:Place[],prefs:Preferences,title:string,subtitle:string,id:string):Course {
  let now=minutes(prefs.start), deadline=minutes(prefs.end); if(deadline<=now)deadline+=1440;
  const begin=now;let last={lat:prefs.lat,lng:prefs.lng},total=0;const stops:Stop[]=[];const used=new Set<string>();
- for(const p of places){if(used.has(p.id)||(p.category==='식사'&&stops.some(stop=>stop.category==='식사'))||prefs.excluded?.includes(p.category)||(prefs.activities.length>0&&!prefs.activities.includes(p.category))|| (prefs.indoor&&!p.indoor))continue;const walk=travel(last,p,prefs.transport);if(now+walk+p.duration>deadline||total+p.cost>prefs.budget)continue;now+=walk;stops.push({...p,arrival:time(now),departure:time(now+p.duration),travel:walk,reason:`${p.category} 시간을 넣어 여유 있게 즐겨요.`});now+=p.duration;total+=p.cost;last=p;used.add(p.id);}
+ for(const p of places){if(used.has(p.id)||((p.category==='식사'||p.category==='카페')&&stops.some(stop=>stop.category===p.category)&&!(/카페[ ]*(투어|여러|2곳|3곳)/.test(prefs.request)&&p.category==='카페'))||prefs.excluded?.includes(p.category)||(prefs.activities.length>0&&!prefs.activities.includes(p.category))|| (prefs.indoor&&!p.indoor))continue;const walk=travel(last,p,prefs.transport);if(now+walk+p.duration>deadline||total+p.cost>prefs.budget)continue;now+=walk;stops.push({...p,arrival:time(now),departure:time(now+p.duration),travel:walk,reason:`${p.category} 시간을 넣어 여유 있게 즐겨요.`});now+=p.duration;total+=p.cost;last=p;used.add(p.id);}
  return {id,title,subtitle,stops,total,minutes:now-begin,preferences:prefs};
 }
 export function propose(places:Place[],prefs:Preferences):Course[]{
