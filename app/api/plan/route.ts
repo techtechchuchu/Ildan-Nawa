@@ -10,7 +10,12 @@ async function search(p:Preferences):Promise<Place[]>{
  const key=`${p.lat.toFixed(3)},${p.lng.toFixed(3)}`;const hit=cached.get(key);if(hit&&hit.until>Date.now())return hit.places;
  const around=`(around:2500,${p.lat},${p.lng})[name]`;
  const query=`[out:json][timeout:18];nwr${around}[amenity=restaurant];out center 12;nwr${around}[amenity=cafe];out center 12;nwr${around}[leisure=park];out center 8;nwr${around}[tourism~"^(museum|gallery)$"];out center 8;nwr${around}[leisure~"^(bowling_alley|amusement_arcade)$"];out center 8;`;
- const response=await fetch(settings().OVERPASS_URL||'https://overpass-api.de/api/interpreter',{method:'POST',body:new URLSearchParams({data:query}),headers:{'User-Agent':'IldannawaDemo/1.0 (+https://github.com/techtechchuchu/Ildan-Nawa)'},signal:AbortSignal.timeout(23000)});
+ const endpoints=settings().OVERPASS_URL?[settings().OVERPASS_URL!]:['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
+ let response:Response|undefined;
+ for(const endpoint of endpoints){
+  try{const attempt=await fetch(endpoint,{method:'POST',body:new URLSearchParams({data:query}),headers:{'User-Agent':'IldannawaDemo/1.0 (+https://github.com/techtechchuchu/Ildan-Nawa)'},signal:AbortSignal.timeout(10000)});if(attempt.ok){response=attempt;break;}}catch{/* Retry a different OSM server without inventing places. */}
+ }
+ if(!response)throw new Error('장소 검색 서버가 혼잡해요. 잠시 후 다시 시도하거나 예시 코스를 체험해 주세요.');
  if(!response.ok)throw new Error('장소 검색이 잠시 지연되고 있어요. 잠시 후 다시 시도하거나 예시 코스를 체험해 주세요.');
  const data=await response.json() as {elements:{type:string;id:number;lat?:number;lon?:number;center?:{lat:number;lon:number};tags:Record<string,string>}[]};
  const places=data.elements.flatMap(e=>{const lat=e.lat??e.center?.lat,lng=e.lon??e.center?.lon;if(lat===undefined||lng===undefined)return[];const category=e.tags.amenity==='restaurant'?'식사':e.tags.amenity==='cafe'?'카페':e.tags.leisure==='park'?'산책':e.tags.leisure?'놀거리':'문화';return[{id:`${e.type}/${e.id}`,name:e.tags['name:ko']||e.tags.name,lat,lng,category,...categories[category],indoor:category!=='산책',cuisine:e.tags.cuisine,address:e.tags['addr:full']||e.tags['addr:street']||'',url:`https://www.openstreetmap.org/${e.type}/${e.id}`}];});
