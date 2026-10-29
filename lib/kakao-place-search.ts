@@ -24,9 +24,9 @@ export async function searchKakaoPlaces(p:Preferences,key:string):Promise<Place[
  if(selected.includes('식사'))for(const page of [1,2,3])searches.push({category:'식사',group:'FD6',page,...(p.food&&p.food!=='상관없어요'?{query:p.food}:{})});
  if(selected.includes('카페')){for(const page of [1,2,3])searches.push({category:'카페',group:'CE7',page});if(/예쁜|감성|분위기|인테리어/.test(p.request))for(const query of ['감성카페','예쁜 카페'])searches.push({category:'카페',group:'CE7',query});}
  if(selected.includes('산책'))searches.push({category:'산책',query:'공원'});
- if(selected.includes('문화'))searches.push({category:'문화',group:'CT1'});
+ if(selected.includes('문화')){searches.push({category:'문화',group:'CT1'});if(/영화|극장/.test(p.request))searches.push({category:'문화',query:'영화관'});}
  if(selected.includes('놀거리'))for(const query of ['볼링장','방탈출','보드게임'])searches.push({category:'놀거리',query});
- const cacheKey=JSON.stringify([p.lat.toFixed(3),p.lng.toFixed(3),selected,p.food,/예쁜|감성|분위기|인테리어/.test(p.request)]);const hit=cache.get(cacheKey);if(hit&&hit.until>Date.now())return hit.places;if(inflight.has(cacheKey))return inflight.get(cacheKey)!;
+ const cacheKey=JSON.stringify([p.lat.toFixed(3),p.lng.toFixed(3),selected,p.food,/예쁜|감성|분위기|인테리어/.test(p.request),/영화|극장/.test(p.request)]);const hit=cache.get(cacheKey);if(hit&&hit.until>Date.now())return hit.places;if(inflight.has(cacheKey))return inflight.get(cacheKey)!;
  const task=(async()=>{const results=await Promise.allSettled(searches.map(s=>request(s,p,key)));const found=new Map<string,Place>();for(const r of results)if(r.status==='fulfilled')for(const place of r.value)found.set(place.id,place);
  if(!found.size){const failure=results.find(r=>r.status==='rejected');if(failure?.status==='rejected')throw failure.reason;}
  const counts:Record<string,number>={};const places=[...found.values()].sort((a,b)=>distance(p,a)-distance(p,b)).filter(place=>{counts[place.category]=(counts[place.category]||0)+1;return counts[place.category]<=40;});if(cache.size>=40)cache.clear();cache.set(cacheKey,{until:Date.now()+600000,places});return places;})();inflight.set(cacheKey,task);try{return await task;}finally{inflight.delete(cacheKey);}
