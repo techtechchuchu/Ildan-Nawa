@@ -7,3 +7,5 @@ const doc={id:'123',place_name:'검증용 식당',category_name:'음식점 > 한
 test('preserves Kakao identity and labels category prices as estimates',()=>{const p=convertKakaoDocument(doc,'식사',center)!;assert.equal(p.source,'kakao');assert.equal(p.phone,doc.phone);assert.equal(p.priceBasis,'category_estimate');assert.equal(p.url,'https://place.map.kakao.com/123');});
 test('rejects distant or misclassified keyword matches',()=>{assert.equal(convertKakaoDocument({...doc,x:'129.334',y:'35.539'},'식사',center),null);assert.equal(convertKakaoDocument(doc,'산책',center),null);assert.equal(convertKakaoDocument(doc,'카페',center),null);});
 test('uses an exact Kakao detail page for review verification links',()=>{const p=convertKakaoDocument(doc,'식사',center)!;const links=reviewLinks(p);assert.equal(links.kakao,p.url);assert.ok(links.instagram.startsWith('https://www.instagram.com/explore/tags/'));assert.ok(!decodeURIComponent(links.blog).includes(p.address!));});
+
+test('excludes bars from meal recommendations',()=>{assert.equal(convertKakaoDocument({...doc,category_name:'음식점 > 술집 > 호프,요리주점'},'식사',center),null);});
