@@ -5,6 +5,7 @@ const inflight=new Map<string,Promise<Place[]>>();
 type Search={category:string;group?:string;query?:string;page?:number;offsetLat?:number;offsetLng?:number};
 export function convertKakaoDocument(d:KakaoDocument,category:string,center:{lat:number;lng:number}):Place|null{
  const lat=Number(d.y),lng=Number(d.x);if(!/^\d+$/.test(d.id)||!d.place_name?.trim()||!Number.isFinite(lat)||!Number.isFinite(lng)||distance(center,{lat,lng})>3000||!categories[category])return null;
+ if(d.place_name?.replace(/\s/g,'')==='에이엠2'&&((d.road_address_name||'')+' '+(d.address_name||'')).includes('왕생로66번길'))return null;
  if(category==='식사'&&(d.category_group_code!=='FD6'||/아이스크림|식품판매|식료품|편의점|떡,한과|떡집|떡판매|술집|유흥주점|단란주점|호프,요리주점|바,칵테일|포장마차/.test(d.category_name)))return null;
  if(category==='카페'&&d.category_group_code!=='CE7')return null;
  if(category==='산책'&&!/공원|산책|둘레길|수목원/.test(d.category_name))return null;
@@ -32,3 +33,4 @@ export async function searchKakaoPlaces(p:Preferences,key:string):Promise<Place[
  if(!found.size){const failure=results.find(r=>r.status==='rejected');if(failure?.status==='rejected')throw failure.reason;}
  const counts:Record<string,number>={};const places=[...found.values()].sort((a,b)=>distance(p,a)-distance(p,b)).filter(place=>{counts[place.category]=(counts[place.category]||0)+1;return counts[place.category]<=100;});if(cache.size>=40)cache.clear();cache.set(cacheKey,{until:Date.now()+600000,places});return places;})();inflight.set(cacheKey,task);try{return await task;}finally{inflight.delete(cacheKey);}
 }
+
