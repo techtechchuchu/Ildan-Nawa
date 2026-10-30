@@ -74,8 +74,22 @@ const places=candidates.map(place=>{
  const result=await response.json() as {output?:{content?:{type:string;text?:string}[]}[]};const raw=result.output?.flatMap(o=>o.content||[]).find(c=>c.type==='output_text')?.text;if(!raw)throw new Error('GPT 응답을 받지 못했어요. 다시 시도해 주세요.');
  const plan=JSON.parse(raw) as {courses:{title:string;subtitle:string;ids:string[]}[]};courses=plan.courses.map((c,i)=>schedule(c.ids.flatMap(id=>places.filter(p=>p.id===id)),prefs,`추천 코스 ${i+1}`,'선택한 장소와 동선을 확인해 보세요.',`gpt-${i}`)).filter(c=>c.stops.length);mode='gpt';notice=`GPT 추천 · ${placeSource==='kakao'?'카카오':'OSM'}에서 상호·위치를 검색했어요. 업종별 계획 금액은 추정이며 실제 메뉴 가격과 매장 식사 가능 여부는 미확인입니다.`;
  }
+ // 선택한 활동과 시간 안에서 남은 예산을 활용할 수 있는 추가 활동이 있으면 검토한다.
+ if(!demo)courses=courses.map(course=>{
+  let current=course;
+  for(let attempt=0;attempt<2&&current.stops.length<5&&prefs.budget-current.total>=10000;attempt++){
+   const usedCategories=new Set(current.stops.map(s=>s.category));
+   const eligible=places.filter(p=>!usedCategories.has(p.category)&&p.cost>0&&p.cost<=prefs.budget-current.total&&(!prefs.activities.length||prefs.activities.includes(p.category))&&!prefs.excluded?.includes(p.category));
+   eligible.sort((a,b)=>b.cost-a.cost);
+   let extended=course;
+   for(const candidate of eligible){const trial=schedule([...current.stops,candidate],prefs,current.title,current.subtitle,current.id);if(trial.stops.length===current.stops.length+1){extended=trial;break;}}
+   if(extended===course)break;current=extended;
+  }
+  return current;
+ });
  if(!courses.length)return Response.json({error:'시간과 예산 안에 가능한 장소가 없어요. 예산이나 종료 시간을 늘려 주세요.'},{status:422});
  return Response.json({courses,preferences:prefs,mode,notice,placeSource,reviewSources,reviewSearchStatus,popupSources,popupSearchStatus,availableCategories:[...new Set(places.map(p=>p.category))]});
  }catch(error){return Response.json({error:error instanceof Error?error.message:'코스를 만들지 못했어요. 다시 시도해 주세요.'},{status:503});}
 }
+
 
