@@ -9,3 +9,5 @@ test('rejects distant or misclassified keyword matches',()=>{assert.equal(conver
 test('uses an exact Kakao detail page for review verification links',()=>{const p=convertKakaoDocument(doc,'식사',center)!;const links=reviewLinks(p);assert.equal(links.kakao,p.url);assert.ok(links.instagram.startsWith('https://www.instagram.com/explore/tags/'));assert.ok(!decodeURIComponent(links.blog).includes(p.address!));});
 
 test('excludes bars from meal recommendations',()=>{assert.equal(convertKakaoDocument({...doc,category_name:'음식점 > 술집 > 호프,요리주점'},'식사',center),null);});
+
+test('filters small parks and park facilities from walking candidates',()=>{const park={...doc,category_name:'여행 > 공원',place_name:'삼산어린이공원'};assert.equal(convertKakaoDocument(park,'산책',center),null);assert.equal(convertKakaoDocument({...park,place_name:'울산대공원 주차장'},'산책',center),null);assert.ok(convertKakaoDocument({...park,place_name:'울산대공원'},'산책',center));});
