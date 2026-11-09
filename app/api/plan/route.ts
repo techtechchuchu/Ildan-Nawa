@@ -5,6 +5,7 @@ import { categories, propose, samplePlaces, schedule, type Preferences } from '.
 
 import { searchPlaces } from '../../../lib/place-search';
 import { searchKakaoPlaces } from '../../../lib/kakao-place-search';
+import { searchJeonpoCafe } from '../../../lib/instagram';
 function settings(){return process.env;}
 function openAIKey(){return settings().OPENAI_API_KEY||settings().open_api_key;}
 function kakaoKey(){return settings().KAKAO_REST_API_KEY||settings().kakao_rest_api_key;}
@@ -33,11 +34,16 @@ const places=candidates.map(place=>{
  return true;
 });
  if(places.length===0)return Response.json({error:'이 지역에서 선택한 활동에 맞는 장소를 찾지 못했어요. 다른 지역을 선택하거나 예시 코스를 체험해 주세요.'},{status:422});
- let reviewSources:{url:string;title:string}[]=[];let reviewSearchStatus='not_run';let popupSources:{url:string;title:string}[]=[];let popupSearchStatus='not_run';
+ let reviewSources:{url:string;title:string}[]=[];let reviewSearchStatus='not_run';let popupSources:{url:string;title:string}[]=[];let popupSearchStatus='not_run';let instagramStatus='not_run';
  let courses=propose(places,prefs);let mode=demo?'sample':'rules';let notice=demo?'체험용 가상 장소입니다. 실제 방문용 코스가 아니에요.':`${placeSource==='kakao'?'카카오 검색':'OSM 검색'}의 장소 정보로 구성했어요. GPT 미연결 상태입니다.`;
  const key=openAIKey();
  if(key&&!demo){
  let webEvidence='';
+ if(/전포/.test(prefs.region)&&(!prefs.activities.length||prefs.activities.includes('카페'))){
+  const ig=await searchJeonpoCafe(settings().INSTAGRAM_ACCESS_TOKEN||'',settings().INSTAGRAM_ACCOUNT_ID||'');
+  instagramStatus=ig.status;
+  // Caption mentions alone do not establish the correct branch. Do not use them to rank places.
+ }
  const naverId=settings().NAVER_CLIENT_ID;const naverSecret=settings().NAVER_CLIENT_SECRET;
  if(naverId&&naverSecret){
   const shortlist=Object.keys(categories).flatMap(category=>places.filter(place=>place.category===category&&place.address).slice(0,2)).slice(0,8);
@@ -88,7 +94,7 @@ const places=candidates.map(place=>{
   return current;
  });
  if(!courses.length)return Response.json({error:'시간과 예산 안에 가능한 장소가 없어요. 예산이나 종료 시간을 늘려 주세요.'},{status:422});
- return Response.json({courses,preferences:prefs,mode,notice,placeSource,reviewSources,reviewSearchStatus,popupSources,popupSearchStatus,availableCategories:[...new Set(places.map(p=>p.category))]});
+ return Response.json({courses,preferences:prefs,mode,notice,placeSource,reviewSources,reviewSearchStatus,popupSources,popupSearchStatus,instagramStatus,availableCategories:[...new Set(places.map(p=>p.category))]});
  }catch(error){return Response.json({error:error instanceof Error?error.message:'코스를 만들지 못했어요. 다시 시도해 주세요.'},{status:503});}
 }
 
