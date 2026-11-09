@@ -7,16 +7,7 @@ export type RankEntry={id:string;kind:RankKind;item_key:string;title:string;regi
 type Session={access_token:string;refresh_token:string;expires_at:number;user:{id:string}};
 function headers(token?:string){return {apikey:key,Authorization:'Bearer '+(token||key),'Content-Type':'application/json'};}
 function assertConfig(){if(!url||!key)throw new Error('커뮤니티 연결을 준비 중이에요.');}
-async function session():Promise<Session>{
- assertConfig();
- let cached:Session|null=null;try{cached=JSON.parse(localStorage.getItem(storageKey)||'null');}catch{}
- if(cached?.access_token&&cached.expires_at>Date.now()/1000+60)return cached;
- if(cached?.refresh_token){try{const r=await fetch(url+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:headers(),body:JSON.stringify({refresh_token:cached.refresh_token})});if(r.ok){const x=await r.json() as Session & {expires_in:number};const next={...x,expires_at:x.expires_at||Math.floor(Date.now()/1000)+x.expires_in};localStorage.setItem(storageKey,JSON.stringify(next));return next;}}catch{}}
- const r=await fetch(url+'/auth/v1/signup',{method:'POST',headers:headers(),body:'{}'});
- if(!r.ok)throw new Error('추천 기능을 준비 중이에요. 잠시 후 다시 시도해 주세요.');
- const x=await r.json() as Session & {expires_in:number};if(!x.access_token||!x.user?.id)throw new Error('추천 기능에 연결하지 못했어요.');
- const next={...x,expires_at:x.expires_at||Math.floor(Date.now()/1000)+x.expires_in};localStorage.setItem(storageKey,JSON.stringify(next));return next;
-}
+async function session():Promise<Session>{ throw new Error('추천은 회원가입 후 이용할 수 있어요. 간편 로그인은 준비 중입니다.'); }
 async function idFor(kind:RankKind,ids:string[]){const bytes=new TextEncoder().encode(kind+':'+ids.join('|'));const digest=await crypto.subtle.digest('SHA-256',bytes);return kind+':'+Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,'0')).join('');}
 export async function rankings(kind:RankKind):Promise<RankEntry[]>{
  assertConfig();const q=new URLSearchParams({select:'id,kind,item_key,title,region,payload,votes,created_at',kind:'eq.'+kind,votes:'gt.0',order:'votes.desc,created_at.desc',limit:'50'});

@@ -25,9 +25,9 @@ grant insert(kind,item_key,title,region,payload,created_by) on public.community_
 grant select(item_id) on public.community_votes to anon,authenticated;
 grant insert(item_id,user_id),delete on public.community_votes to authenticated;
 create policy community_item_read on public.community_items for select to anon,authenticated using (true);
-create policy community_item_insert on public.community_items for insert to authenticated with check ((select auth.uid())=created_by);
+create policy community_item_insert on public.community_items for insert to authenticated with check ((select auth.uid())=created_by and coalesce(((select auth.jwt())->>'is_anonymous')::boolean,true)=false);
 create policy community_vote_public_item on public.community_votes for select to anon,authenticated using (true);
-create policy community_vote_insert_own on public.community_votes for insert to authenticated with check ((select auth.uid())=user_id);
+create policy community_vote_insert_own on public.community_votes for insert to authenticated with check ((select auth.uid())=user_id and coalesce(((select auth.jwt())->>'is_anonymous')::boolean,true)=false);
 create policy community_vote_delete_own on public.community_votes for delete to authenticated using ((select auth.uid())=user_id);
 create view public.community_rankings with (security_invoker=true) as
  select i.id,i.kind,i.item_key,i.title,i.region,i.payload,i.created_at,count(v.item_id)::bigint as votes
