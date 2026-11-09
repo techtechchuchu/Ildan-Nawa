@@ -24,15 +24,14 @@ async function request(search:Search,p:Preferences,key:string):Promise<Place[]>{
 export async function searchKakaoPlaces(p:Preferences,key:string):Promise<Place[]>{
  const selected=p.activities.length?p.activities:Object.keys(categories);const searches:Search[]=[];
  if(selected.includes('식사'))for(const page of [1,2,3])searches.push({category:'식사',group:'FD6',page,...(p.food&&p.food!=='상관없어요'?{query:p.food}:{})});
- if(selected.includes('카페')){for(const page of [1,2,3])searches.push({category:'카페',group:'CE7',page});if(/예쁜|감성|분위기|인테리어/.test(p.request))for(const query of ['감성카페','예쁜 카페'])searches.push({category:'카페',group:'CE7',query});}
+ if(selected.includes('카페')){for(const page of [1,2,3])searches.push({category:'카페',group:'CE7',page});if(/예카|예쁜|감성|분위기|인테리어/.test(p.request))for(const query of ['감성카페','예쁜 카페'])searches.push({category:'카페',group:'CE7',query});}
  for(const [offsetLat,offsetLng] of [[0.006,0],[-0.006,0],[0,0.007],[0,-0.007]]){if(selected.includes('식사'))searches.push({category:'식사',group:'FD6',offsetLat,offsetLng,...(p.food&&p.food!=='상관없어요'?{query:p.food}:{})});if(selected.includes('카페'))searches.push({category:'카페',group:'CE7',offsetLat,offsetLng});}
  if(selected.includes('산책')){for(const page of [1,2,3])searches.push({category:'산책',query:'공원',sort:'accuracy',page});if(/울산/.test(p.region))for(const query of ['울산대공원','태화강국가정원'])searches.push({category:'산책',query,sort:'accuracy'});}
  if(selected.includes('문화')){searches.push({category:'문화',group:'CT1'});if(/영화|극장/.test(p.request))searches.push({category:'문화',query:'영화관'});}
  if(selected.includes('놀거리'))for(const query of ['볼링장','방탈출','보드게임','백화점','복합쇼핑몰','쇼핑몰','업스퀘어'])searches.push({category:'놀거리',query});
  const wantsUnmanned=/무인(?:카페)?\s*(?:추천|찾|원|가고|좋)/.test(p.request);
- const cacheKey=JSON.stringify([wantsUnmanned,p.lat.toFixed(3),p.lng.toFixed(3),selected,p.food,p.region,/예쁜|감성|분위기|인테리어/.test(p.request),/영화|극장/.test(p.request)]);const hit=cache.get(cacheKey);if(hit&&hit.until>Date.now())return hit.places;if(inflight.has(cacheKey))return inflight.get(cacheKey)!;
+ const cacheKey=JSON.stringify([wantsUnmanned,p.lat.toFixed(3),p.lng.toFixed(3),selected,p.food,p.region,/예카|예쁜|감성|분위기|인테리어/.test(p.request),/영화|극장/.test(p.request)]);const hit=cache.get(cacheKey);if(hit&&hit.until>Date.now())return hit.places;if(inflight.has(cacheKey))return inflight.get(cacheKey)!;
  const task=(async()=>{const results=await Promise.allSettled(searches.map(s=>request(s,p,key)));const found=new Map<string,Place>();for(const r of results)if(r.status==='fulfilled')for(const place of r.value)found.set(place.id,place);
  if(!found.size){const failure=results.find(r=>r.status==='rejected');if(failure?.status==='rejected')throw failure.reason;}
  const all=[...found.values()].filter(x=>x.category!=='카페'||wantsUnmanned||!/무인카페|무인 카페/.test(x.name+' '+(x.sourceCategory||'')));const notable=all.filter(x=>x.category==='산책'&&/^(울산대공원|태화강국가정원)$/.test(x.name.replace(/\s/g,'')));const filtered=notable.length?all.filter(x=>x.category!=='산책'||notable.some(y=>y.id===x.id)):all;const counts:Record<string,number>={};const places=filtered.sort((a,b)=>distance(p,a)-distance(p,b)).filter(place=>{counts[place.category]=(counts[place.category]||0)+1;return counts[place.category]<=100;});if(cache.size>=40)cache.clear();cache.set(cacheKey,{until:Date.now()+600000,places});return places;})();inflight.set(cacheKey,task);try{return await task;}finally{inflight.delete(cacheKey);}
 }
-

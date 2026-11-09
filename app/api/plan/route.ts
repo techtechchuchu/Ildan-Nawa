@@ -5,7 +5,6 @@ import { categories, propose, samplePlaces, schedule, type Preferences } from '.
 
 import { searchPlaces } from '../../../lib/place-search';
 import { searchKakaoPlaces } from '../../../lib/kakao-place-search';
-import { searchJeonpoCafe } from '../../../lib/instagram';
 function settings(){return process.env;}
 function openAIKey(){return settings().OPENAI_API_KEY||settings().open_api_key;}
 function kakaoKey(){return settings().KAKAO_REST_API_KEY||settings().kakao_rest_api_key;}
@@ -30,6 +29,7 @@ const places=candidates.map(place=>{
  const label=place.name+' '+(place.sourceCategory||'');
  if(!wantsChain&&independentCafes.length>=3&&place.category==='카페'&&chainCafe.test(label))return false;
  if(/배달전문|배달 전문|포장전문|포장 전문|배달·포장|배달포장|배달및포장/.test(label))return false;
+ if(place.category==='식사'&&/분식|김밥|떡볶이/.test(label)&&/(역사\s*내|지하철역\s*내|역내\s*매장|역구내)/.test(label+' '+(place.address||'')))return false;
  if(prefs.budget<=20000&&place.category==='식사'&&/횟집|생선회|회센터|참치전문|오마카세|대게|킹크랩|장어구이|한우|스테이크/.test(label))return false;
  return true;
 });
@@ -39,13 +39,27 @@ const places=candidates.map(place=>{
  const key=openAIKey();
  if(key&&!demo){
  let webEvidence='';
- if(/전포/.test(prefs.region)&&(!prefs.activities.length||prefs.activities.includes('카페'))){
-  const ig=await searchJeonpoCafe(settings().INSTAGRAM_ACCESS_TOKEN||'',settings().INSTAGRAM_ACCOUNT_ID||'');
-  instagramStatus=ig.status;
-  // Caption mentions alone do not establish the correct branch. Do not use them to rank places.
- }
  const naverId=settings().NAVER_CLIENT_ID;const naverSecret=settings().NAVER_CLIENT_SECRET;
  if(naverId&&naverSecret){
+  // Discover blog mentions across the whole candidate pool before individual searches.
+  // A mention is a search hint only: it does not prove atmosphere or branch identity.
+  if((!prefs.activities.length||prefs.activities.includes('카페'))&&/예카|예쁜|감성|분위기|인테리어|카페/.test(prefs.request)){
+   try{
+    const query=new URLSearchParams({query:`${prefs.region} 예쁜 카페`,display:'30',sort:'sim'});
+    const response=await fetch(`https://naverapihub.apigw.ntruss.com/search/v1/blog?${query}`,{headers:{'X-NCP-APIGW-API-KEY-ID':naverId,'X-NCP-APIGW-API-KEY':naverSecret},signal:AbortSignal.timeout(9000),cache:'no-store'});
+    if(response.ok){
+     const data=await response.json() as {items?:{title?:string;description?:string;link?:string}[]};
+     const clean=(s:string)=>s.replace(/<[^>]*>/g,'').replace(/&(?:quot|amp|lt|gt|nbsp);/g,' ').replace(/\s+/g,' ').trim();
+     const normalize=(s:string)=>clean(s).toLowerCase().replace(/[^가-힣a-z0-9]/g,'');
+     const items=(data.items||[]).flatMap(item=>{try{const url=new URL(item.link||'');if(url.protocol!=='https:'||url.hostname!=='blog.naver.com')return [];return [{title:clean(item.title||''),description:clean(item.description||''),url:url.href}];}catch{return [];}});
+     const matched=places.filter(place=>place.category==='카페'&&normalize(place.name).length>=3).flatMap(place=>{
+      const name=normalize(place.name);const hits=items.filter(item=>normalize(item.title+' '+item.description).includes(name)).slice(0,2);
+      return hits.length?[{id:place.id,name:place.name,address:place.address,posts:hits}]:[];
+     });
+     if(matched.length){const ids=new Set(matched.map(x=>x.id));places.sort((a,b)=>Number(ids.has(b.id))-Number(ids.has(a.id)));webEvidence=JSON.stringify({notice:'블로그 검색 발췌에서 상호가 언급된 후보이며 동일 지점과 분위기는 미확인',candidates:matched.slice(0,12)}).slice(0,7000);reviewSources=matched.flatMap(x=>x.posts.map(post=>({title:post.title||'블로그 검색 결과',url:post.url}))).slice(0,12);}
+    }
+   }catch{/* Continue with Kakao candidates when blog search is unavailable. */}
+  }
   const shortlist=Object.keys(categories).flatMap(category=>places.filter(place=>place.category===category&&place.address).slice(0,2)).slice(0,8);
   const results=await Promise.allSettled(shortlist.map(async place=>{
    const params=new URLSearchParams({query:`${place.name} ${prefs.region} 후기`,display:'3',sort:'sim'});
@@ -55,7 +69,7 @@ const places=candidates.map(place=>{
    return {place,items:(json.items||[]).flatMap(item=>{try{const url=new URL(item.link||'');if(url.protocol!=='https:'||url.hostname!=='blog.naver.com')return [];const clean=(v:string)=>v.replace(/<[^>]*>/g,'').slice(0,500);return [{title:clean(item.title||'블로그 후기'),description:clean(item.description||''),url:url.href}];}catch{return [];}})};
   }));
   const found=results.flatMap(r=>r.status==='fulfilled'?[r.value]:[]).filter(x=>x.items.length);
-  if(found.length){webEvidence=JSON.stringify(found.map(x=>({id:x.place.id,name:x.place.name,address:x.place.address,results:x.items}))).slice(0,10000);reviewSources=found.flatMap(x=>x.items.map(item=>({title:item.title,url:item.url}))).slice(0,12);}
+  if(found.length){webEvidence=(webEvidence+'\n'+JSON.stringify(found.map(x=>({id:x.place.id,name:x.place.name,address:x.place.address,results:x.items})))).slice(0,10000);reviewSources=[...reviewSources,...found.flatMap(x=>x.items.map(item=>({title:item.title,url:item.url})))].slice(0,12);}
  }
  if(!webEvidence){
  try {
