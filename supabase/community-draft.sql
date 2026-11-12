@@ -31,5 +31,5 @@ create policy community_vote_insert_own on public.community_votes for insert to 
 create policy community_vote_delete_own on public.community_votes for delete to authenticated using ((select auth.uid())=user_id);
 create view public.community_rankings with (security_invoker=true) as
  select i.id,i.kind,i.item_key,i.title,i.region,i.payload,i.created_at,count(v.item_id)::bigint as votes
- from public.community_items i left join public.community_votes v on v.item_id=i.id group by i.id;
+ from public.community_items i join public.community_votes v on v.item_id=i.id group by i.id;
 grant select on public.community_rankings to anon,authenticated;
