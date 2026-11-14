@@ -64,3 +64,5 @@
 /* Center empty-state actions without the global trailing-icon spacer. */
 .community-empty .primary,.empty-state .primary{justify-content:center;gap:9px;padding:0 18px;text-align:center}
 .community-empty .primary>svg:last-child,.empty-state .primary>svg:last-child{margin-left:0;flex:none}
+
+.featured-list{display:grid;gap:14px}.featured-card{background:#fff;border:1px solid #eee6f1;border-radius:18px;padding:22px}.featured-label{color:#8950bc;font-size:11px;font-weight:700}.featured-card h2{font-size:20px;margin:9px 0}.featured-card p,.featured-card small{color:#766a7d;font-size:12px;line-height:1.6}.featured-card ol{display:flex;flex-wrap:wrap;gap:9px;margin:16px 0;padding:0;list-style:none}.featured-card li a{display:block;border:1px solid #ebddf1;border-radius:9px;padding:9px 11px;color:#5d3c75;font-size:12px}.featured-list>.primary{max-width:300px;margin:10px auto 0;width:100%}
