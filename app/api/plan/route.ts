@@ -14,7 +14,7 @@ export async function POST(req:Request){
  try{
  const body=await req.json() as {preferences:Preferences;sample?:boolean;modification?:string;previous?:unknown};const p=body.preferences as Preferences;
  if(!p||!Number.isFinite(p.lat)||!Number.isFinite(p.lng)||p.lat<33||p.lat>39||p.lng<124||p.lng>132||!Number.isFinite(p.budget)||p.budget<0||p.budget>10000000||!/^\d{2}:\d{2}$/.test(p.start)||!/^\d{2}:\d{2}$/.test(p.end)||!Array.isArray(p.activities)||p.activities.some(c=>!(c in categories))||typeof p.request!=='string'||p.request.length>600) return Response.json({error:'입력 조건을 확인해 주세요.'},{status:400});
- const demo=body.sample===true;const prefs=demo?{...p,lat:35.539,lng:129.334,region:'울산 삼산동 · 예시'}:p;
+ const demo=body.sample===true;const prefs=demo?{...p,lat:37.5445,lng:127.0557,region:'서울 성수동 · 예시'}:p;
  const placeSource=demo?'sample':kakaoKey()?'kakao':'osm';
  const candidates=demo?samplePlaces():placeSource==='kakao'?await searchKakaoPlaces(prefs,kakaoKey()!):await searchPlaces(prefs);
 // 이름이나 업종에 명시된 단서만 사용할 수 있으며, 영업 형태와 실제 가격은 확인되지 않았다.

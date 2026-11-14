@@ -5,7 +5,7 @@ import type {Course,Preferences,Place} from '../lib/planner';
 import MapPanel from './map-panel';
 import {reviewLinks} from '../lib/review-links';
 import {rankings,recommend,type RankEntry,type RankKind} from '../lib/community';
-const presets=[{name:'울산 삼산동',lat:35.539,lng:129.334},{name:'서울 성수동',lat:37.5445,lng:127.0557},{name:'부산 전포동',lat:35.1565,lng:129.063},{name:'대구 동성로',lat:35.869,lng:128.595}];
+const presets=[{name:'서울 성수동',lat:37.5445,lng:127.0557},{name:'서울 홍대',lat:37.5563,lng:126.9236},{name:'서울 강남역',lat:37.4979,lng:127.0276},{name:'서울 연남동',lat:37.5663,lng:126.9259}];
 const initial:Preferences={region:presets[0].name,lat:presets[0].lat,lng:presets[0].lng,companion:'연인과',people:2,start:'14:00',end:'19:00',budget:40000,transport:'도보',activities:[],food:'상관없어요',indoor:false,request:''};
 type Result={courses:Course[];preferences:Preferences;mode:string;notice:string;placeSource?:string;reviewSearchStatus?:string;reviewSources?:{url:string;title:string}[];popupSearchStatus?:string;popupSources?:{url:string;title:string}[];availableCategories:string[]};
 export default function Home(){

@@ -8,7 +8,7 @@
 - 이전 Sites 데모: https://ildannawa-mobile-demo.workspace-907689.chatgpt.site
 - GitHub: https://github.com/techtechchuchu/Ildan-Nawa
 - 이전 Sites 데모에만 ChatGPT 로그인이 필요합니다.
-- `예시 코스 먼저 체험하기`는 울산 삼산동 좌표에 배치한 **가상 장소**로 작동합니다. 실제 방문용 장소가 아닙니다.
+- `예시 코스 먼저 체험하기`는 서울 성수동 좌표에 배치한 **가상 장소**로 작동합니다. 실제 방문용 장소가 아닙니다.
 - `나만의 코스 만들기`는 OpenStreetMap의 실제 장소를 검색합니다. GPT 키가 없으면 기본 규칙 추천임을 표시합니다.
 - GPT 키 설정 후에는 OpenAI Responses API와 JSON Schema로 코스 3개를 생성합니다. 후보에 없는 장소 ID는 사용할 수 없습니다.
 
